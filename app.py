@@ -3,7 +3,7 @@ PropostaAI - Gerador Local de Propostas com IA
 Todos os dados são processados localmente. Nenhum dado é armazenado em disco.
 """
 
-from config import APP_PORT
+from config import APP_PORT, APP_IA_KEY
 from flask import Flask, request, jsonify, send_file, render_template
 import pdfplumber
 from openai import OpenAI
@@ -159,7 +159,7 @@ def analyze_pdf():
         return jsonify({'error': 'Nenhum arquivo enviado'}), 400
 
     file = request.files['file']
-    api_key = request.form.get('api_key', '').strip()
+    api_key = APP_IA_KEY
     market_password = request.form.get('market_password', '').strip()
 
     if not api_key:
@@ -324,7 +324,7 @@ def generate_document():
         return jsonify({'error': 'Sessão não encontrada. Faça upload do PDF novamente.'}), 400
 
     session = sessions[session_id]
-    api_key = session['api_key']
+    api_key = APP_IA_KEY
 
     try:
         client = OpenAI(api_key=api_key)
