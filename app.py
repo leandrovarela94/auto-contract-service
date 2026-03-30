@@ -3,6 +3,7 @@ PropostaAI - Gerador Local de Propostas com IA
 Todos os dados são processados localmente. Nenhum dado é armazenado em disco.
 """
 
+from config import APP_PORT
 from flask import Flask, request, jsonify, send_file, render_template
 import pdfplumber
 import anthropic
@@ -439,8 +440,7 @@ if __name__ == '__main__':
     print("\n" + "="*55)
     print("  🔒 PropostaAI - Servidor Local Iniciado")
     print("="*55)
-    print(f"  URL: http://127.0.0.1:5000")
     print(f"  Todos os dados ficam apenas em memória RAM")
     print(f"  Nenhum dado é salvo em disco")
     print("="*55 + "\n")
-    app.run(debug=False, host='127.0.0.1', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=APP_PORT)

@@ -101,7 +101,7 @@ proposta-app/
 **Erro de porta em uso**
 → Mude a porta no final de `app.py`:
 ```python
-app.run(debug=False, host='127.0.0.1', port=5001)  # porta diferente
+app.run(debug=False, host='0.0.0.0', port=$PORT)  # porta diferente
 ```
 
 **PDF com caracteres especiais incorretos**
