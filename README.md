@@ -7,8 +7,8 @@ Todos os dados ficam **apenas na memória RAM** — nada é salvo em disco.
 
 ## ✅ Requisitos
 
-- Python 3.9 ou superior
-- Chave de API da Anthropic (console.anthropic.com)
+- Python 3.12 ou superior
+- Chave de API da IA 
 
 ---
 
