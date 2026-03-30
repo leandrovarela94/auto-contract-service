@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropostaAI — Gerador Local de Propostas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b14;
+    --bg2: #0d1220;
+    --surface: #111827;
+    --surface2: #1a2332;
+    --border: #1e2d42;
+    --border2: #263548;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --accent-glow: rgba(59,130,246,0.15);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.12);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #4b6380;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+    --r: 10px;
+    --r2: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(59,130,246,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ─── HEADER ─── */
+  header {
+    padding: 24px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 20px rgba(59,130,246,0.3);
+  }
+  .logo-text {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--accent2); }
+  .security-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-glow);
+    border: 1px solid rgba(16,185,129,0.2);
+    color: var(--green);
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  /* ─── PROGRESS STEPS ─── */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 40px;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: var(--border);
+    transition: background 0.4s;
+  }
+  .step.done:not(:last-child)::after { background: var(--accent); }
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text3);
+    background: var(--surface);
+    flex-shrink: 0;
+    transition: all 0.3s;
+    position: relative;
+    z-index: 1;
+  }
+  .step.active .step-num {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+    box-shadow: 0 0 12px rgba(59,130,246,0.25);
+  }
+  .step.done .step-num {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .step-label {
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+  .step.active .step-label { color: var(--text2); }
+  .step.done .step-label { color: var(--text2); }
+
+  /* ─── PANELS ─── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 28px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .panel.active { display: block; animation: fadeUp 0.3s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-title {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+  .panel-subtitle {
+    color: var(--text2);
+    font-size: 13px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  /* ─── FORM ELEMENTS ─── */
+  .field { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 7px;
+  }
+  label .req { color: var(--accent); }
+  input[type="text"], input[type="password"], input[type="number"],
+  input[type="email"], input[type="date"], select, textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1.5px solid var(--border2);
+    border-radius: var(--r2);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 10px 13px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  input.locked {
+    background: rgba(245,158,11,0.06);
+    border-color: rgba(245,158,11,0.3);
+    color: var(--amber);
+    cursor: not-allowed;
+  }
+  input.calculated {
+    background: rgba(16,185,129,0.06);
+    border-color: rgba(16,185,129,0.3);
+    color: var(--green);
+    cursor: default;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .field-hint {
+    font-size: 11.5px;
+    color: var(--text3);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* ─── UPLOAD ZONE ─── */
+  .upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--r);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .upload-zone.has-file {
+    border-color: var(--green);
+    background: var(--green-glow);
+    border-style: solid;
+  }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-title { font-family: var(--display); font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .upload-sub { color: var(--text2); font-size: 13px; }
+  .upload-file-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    margin-top: 10px;
+    font-weight: 500;
+  }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: var(--r2);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 20px rgba(59,130,246,0.25);
+  }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 24px rgba(59,130,246,0.35); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .btn-secondary:hover { background: var(--border); color: var(--text); }
+  .btn-green {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 0 20px rgba(16,185,129,0.2);
+  }
+  .btn-green:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    align-items: center;
+  }
+
+  /* ─── VARIABLE CARDS ─── */
+  .var-sections { display: flex; flex-direction: column; gap: 24px; }
+  .var-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .var-section-title .count {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 1px 7px;
+    border-radius: 100px;
+    font-size: 10px;
+    color: var(--text2);
+  }
+
+  .var-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .var-card {
+    background: var(--bg2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r2);
+    padding: 14px;
+    transition: border-color 0.2s;
+  }
+  .var-card:hover { border-color: var(--border2); }
+  .var-card.locked-card { border-color: rgba(245,158,11,0.25); }
+  .var-card.calc-card { border-color: rgba(16,185,129,0.2); }
+  .var-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .var-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.3px;
+  }
+  .var-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 100px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge-locked { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-calc { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .badge-ref { background: rgba(59,130,246,0.1); color: var(--accent2); border: 1px solid rgba(59,130,246,0.2); }
+  .var-hint { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  /* ─── CALCULATIONS SUMMARY ─── */
+  .calc-summary {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    margin-top: 24px;
+  }
+  .calc-summary-title {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .calc-row:last-child { border-bottom: none; font-weight: 600; }
+  .calc-row:last-child .calc-value { color: var(--green); font-size: 16px; }
+  .calc-name { color: var(--text2); font-size: 13px; }
+  .calc-value { font-family: var(--mono); font-size: 14px; color: var(--text); }
+
+  /* ─── ALERTS ─── */
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--r2);
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+  .alert-info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
+  .alert-success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); color: #6ee7b7; }
+  .alert-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: #fcd34d; }
+  .alert-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; }
+
+  /* ─── LOADING ─── */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .loading.active { display: block; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text2); font-size: 14px; }
+  .loading-sub { color: var(--text3); font-size: 12px; margin-top: 4px; font-family: var(--mono); }
+
+  /* ─── MARKET REF MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    padding: 28px;
+    width: 440px;
+    max-width: 90vw;
+    animation: fadeUp 0.25s ease;
+  }
+  .modal-title { font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { color: var(--text2); font-size: 13px; margin-bottom: 20px; }
+
+  /* ─── TAG ─── */
+  .doc-type-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.25);
+    color: #a5b4fc;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 20px;
+  }
+
+  /* ─── TABS ─── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg2);
+    padding: 4px;
+    border-radius: var(--r2);
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    color: var(--text3);
+    border: none;
+    background: none;
+  }
+  .tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+
+  /* ─── MISC ─── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .small { font-size: 12px; color: var(--text3); }
+  .mono { font-family: var(--mono); font-size: 12px; }
+  
+  .section-notice {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: var(--r2);
+    padding: 12px 16px;
+    font-size: 12.5px;
+    color: #fcd34d;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .text-preview {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r2);
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text2);
+    line-height: 1.7;
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    margin-bottom: 20px;
+  }
+
+  .full-width { grid-column: 1 / -1; }
+
+  @media (max-width: 640px) {
+    .var-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .field-row-3 { grid-template-columns: 1fr; }
+    .steps { gap: 4px; }
+    .step-label { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">📄</div>
+        <div class="logo-text">Proposta<span>AI</span></div>
+      </div>
+      <div class="security-badge">
+        🔒 100% Local — Dados em Memória
+      </div>
+    </div>
+  </header>
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step active" id="step-1">
+      <div class="step-num">1</div>
+      <div class="step-label">Configurar</div>
+    </div>
+    <div class="step" id="step-2">
+      <div class="step-num">2</div>
+      <div class="step-label">Analisar</div>
+    </div>
+    <div class="step" id="step-3">
+      <div class="step-num">3</div>
+      <div class="step-label">Preencher</div>
+    </div>
+    <div class="step" id="step-4">
+      <div class="step-num">✓</div>
+      <div class="step-label">Gerar</div>
+    </div>
+  </div>
+
+  <!-- PANEL 1: UPLOAD -->
+  <div class="panel active" id="panel-1">
+    <div class="panel-title">Configuração Inicial</div>
+    <div class="panel-subtitle">Insira sua chave de API e faça upload do template PDF. Nenhum dado será transmitido além da chamada à API Anthropic com a chave informada.</div>
+
+    <div class="alert alert-info">
+      ℹ️ <div>Sua chave de API fica <strong>apenas na memória RAM</strong> desta sessão e nunca é salva em disco. A conexão com a Anthropic usa HTTPS criptografado.</div>
+    </div>
+
+    <div class="field">
+      <label>Chave de API Anthropic <span class="req">*</span></label>
+      <input type="password" id="api-key" placeholder="sk-ant-api..." autocomplete="off" spellcheck="false">
+      <div class="field-hint">Obtenha em console.anthropic.com → API Keys. Começa com "sk-ant-".</div>
+    </div>
+
+    <div class="field">
+      <label>Documento PDF Template <span class="req">*</span></label>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".pdf">
+        <div class="upload-icon">📋</div>
+        <div class="upload-title">Arraste o PDF aqui ou clique para selecionar</div>
+        <div class="upload-sub">Proposta, orçamento, contrato ou qualquer documento de serviço</div>
+        <div class="upload-file-name" id="file-name" style="display:none"></div>
+      </div>
+    </div>
+
+    <hr>
+    <div class="panel-title" style="font-size:15px; margin-bottom:6px;">🔐 Referências de Mercado <span style="color:var(--text3);font-size:12px;font-weight:400">(Opcional)</span></div>
+    <div class="panel-subtitle" style="margin-bottom:16px;">Se você recebeu uma senha do criador do template, insira abaixo para aplicar os valores de mercado autorizados.</div>
+
+    <div class="field">
+      <label>Senha de Referências de Mercado</label>
+      <input type="password" id="market-password" placeholder="Senha fornecida pelo criador do template" autocomplete="off">
+      <div class="field-hint">Sem senha, os campos serão preenchidos livremente. Com senha, valores de referência serão pré-carregados.</div>
+    </div>
+
+    <div id="upload-error" class="alert alert-error" style="display:none;margin-top:12px;"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="startAnalysis()" id="btn-analyze">
+        🔍 Analisar Documento com IA
+      </button>
+    </div>
+  </div>
+
+  <!-- PANEL 2: LOADING / ANALYSIS -->
+  <div class="panel" id="panel-2">
+    <div class="loading active" id="loading-block">
+      <div class="spinner"></div>
+      <div class="loading-text">Analisando documento com IA...</div>
+      <div class="loading-sub" id="loading-sub">Extraindo texto e identificando variáveis</div>
+    </div>
+
+    <div id="analysis-result" style="display:none;">
+      <div id="doc-type-tag" class="doc-type-tag"></div>
+      <div class="panel-title">Variáveis Detectadas</div>
+      <div class="panel-subtitle">A IA identificou os seguintes campos no documento. Revise e prossiga para o preenchimento.</div>
+
+      <div class="text-preview" id="text-preview"></div>
+
+      <div id="variables-preview"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(1)">← Voltar</button>
+        <button class="btn btn-primary" onclick="goToStep(3)">Preencher Campos →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 3: FILL FORM -->
+  <div class="panel" id="panel-3">
+    <div class="panel-title">Preencher Proposta</div>
+    <div class="panel-subtitle">Complete os campos abaixo. Campos com 🔒 são referências de mercado autorizadas. Campos com 🧮 são calculados automaticamente.</div>
+
+    <div id="locked-notice" class="section-notice" style="display:none;">
+      🔒 <div>Alguns campos estão protegidos com referências de mercado. Para alterá-los, é necessária a senha de autorização do criador do template.</div>
+    </div>
+
+    <div id="form-fields"></div>
+
+    <div id="calc-summary-block" class="calc-summary" style="display:none;">
+      <div class="calc-summary-title">🧮 Resumo Financeiro</div>
+      <div id="calc-rows"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goToStep(2)">← Voltar</button>
+      <button class="btn btn-green" onclick="generateDocument()" id="btn-generate">
+        📄 Gerar Documento PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- PANEL 4: DONE -->
+  <div class="panel" id="panel-4">
+    <div style="text-align:center; padding: 20px 0;">
+      <div style="font-size:56px; margin-bottom:16px;">✅</div>
+      <div class="panel-title" style="font-size:24px;">Documento Gerado!</div>
+      <div class="panel-subtitle" style="font-size:15px; max-width:400px; margin:0 auto 28px;">O PDF foi criado e baixado automaticamente. Os dados foram processados apenas em memória e não foram salvos.</div>
+
+      <div class="alert alert-success" style="max-width:420px; margin:0 auto 24px; text-align:left;">
+        🛡️ <div><strong>Dados seguros.</strong> Nenhuma informação desta proposta foi gravada em disco ou transmitida a terceiros além da API Anthropic para geração do conteúdo.</div>
+      </div>
+
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn btn-secondary" onclick="goToStep(3)">← Editar e Regerar</button>
+        <button class="btn btn-primary" onclick="newDocument()">➕ Nova Proposta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARKET REF MANAGER (bottom) -->
+  <div class="panel" id="panel-market" style="margin-top:8px; border-color:rgba(245,158,11,0.2);">
+    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleMarketPanel()">
+      <div>
+        <div style="font-family:var(--display); font-size:15px; font-weight:700;">🔐 Gerenciar Referências de Mercado</div>
+        <div style="color:var(--text3); font-size:12px; margin-top:2px;">Para criadores de template — defina valores de referência protegidos por senha</div>
+      </div>
+      <div id="market-toggle-icon" style="color:var(--text3); font-size:18px; transition:transform 0.2s;">›</div>
+    </div>
+    <div id="market-panel-content" style="display:none; margin-top:20px;">
+      <div class="alert alert-warning">
+        ⚠️ <div>Este painel é para <strong>criadores de template</strong>. Defina os valores de referência de mercado e proteja-os com uma senha. Compartilhe apenas a senha com os usuários autorizados.</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchMarketTab('save')">Salvar Referências</button>
+        <button class="tab" onclick="switchMarketTab('load')">Carregar Referências</button>
+      </div>
+
+      <div id="market-save-tab">
+        <div class="field">
+          <label>Senha para Proteger <span class="req">*</span></label>
+          <input type="password" id="market-ref-password" placeholder="Crie uma senha forte" autocomplete="off">
+          <div class="field-hint">Esta senha será necessária para que outros usuários acessem as referências.</div>
+        </div>
+
+        <div class="field">
+          <label>Referências (JSON)</label>
+          <textarea id="market-ref-json" rows="6" placeholder='{
+  "preco_hora": {"value": "350", "locked": true, "label": "Preço/hora"},
+  "desconto_max": {"value": "15", "locked": false, "label": "Desconto Máximo %"}
+}'></textarea>
+          <div class="field-hint">Formato: {"id_variavel": {"value": "valor", "locked": true/false, "label": "Nome"}}</div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveMarketRefs()">💾 Salvar Referências de Mercado</button>
+        <div id="market-save-msg" class="alert" style="display:none; margin-top:12px;"></div>
+      </div>
+
+      <div id="market-load-tab" style="display:none;">
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="market-load-password" placeholder="Insira a senha">
+        </div>
+        <button class="btn btn-primary" onclick="loadMarketRefs()">🔓 Carregar Referências</button>
+        <div id="market-load-result" style="margin-top:16px; display:none;">
+          <div class="field">
+            <label>Referências Carregadas</label>
+            <textarea id="market-loaded-json" rows="6" readonly style="font-family:var(--mono); font-size:12px;"></textarea>
+          </div>
+        </div>
+        <div id="market-load-msg" class="alert" style="display:none; margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  sessionId: null,
+  variables: [],
+  calculations: [],
+  currentStep: 1,
+  calcValues: {},
+};
+
+// ─── STEP NAVIGATION ─────────────────────────────────────────────────────────
+function goToStep(n) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < n) s.classList.add('done');
+    if (i + 1 === n) s.classList.add('active');
+  });
+  document.getElementById(`panel-${n}`).classList.add('active');
+  state.currentStep = n;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────────────────────
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) showFile(file);
+});
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') {
+    fileInput.files = e.dataTransfer.files;
+    showFile(file);
+  }
+});
+
+function showFile(file) {
+  uploadZone.classList.add('has-file');
+  const fn = document.getElementById('file-name');
+  fn.textContent = `📄 ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  fn.style.display = 'block';
+}
+
+// ─── ANALYSIS ────────────────────────────────────────────────────────────────
+async function startAnalysis() {
+  const apiKey = document.getElementById('api-key').value.trim();
+  const file = fileInput.files[0];
+  const marketPwd = document.getElementById('market-password').value.trim();
+  const errEl = document.getElementById('upload-error');
+
+  errEl.style.display = 'none';
+
+  if (!apiKey) { showError('Insira sua chave de API Anthropic.'); return; }
+  if (!apiKey.startsWith('sk-ant-')) { showError('Chave de API inválida. Deve começar com "sk-ant-".'); return; }
+  if (!file) { showError('Selecione um arquivo PDF.'); return; }
+
+  goToStep(2);
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('api_key', apiKey);
+  if (marketPwd) formData.append('market_password', marketPwd);
+
+  const loadingSub = document.getElementById('loading-sub');
+  const msgs = [
+    'Extraindo texto do documento...',
+    'Identificando variáveis e padrões...',
+    'Analisando cálculos e fórmulas...',
+    'Finalizando análise...'
+  ];
+  let msgIdx = 0;
+  const msgInterval = setInterval(() => {
+    loadingSub.textContent = msgs[Math.min(msgIdx++, msgs.length-1)];
+  }, 2000);
+
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+    clearInterval(msgInterval);
+    const data = await res.json();
+
+    if (!res.ok) { showStepError(data.error); return; }
+
+    state.sessionId = data.session_id;
+    state.variables = data.variables || [];
+    state.calculations = data.calculations || [];
+
+    renderAnalysisResult(data);
+  } catch (e) {
+    clearInterval(msgInterval);
+    showStepError('Erro de conexão. Certifique-se que o servidor Flask está rodando.');
+  }
+}
+
+function renderAnalysisResult(data) {
+  document.getElementById('loading-block').classList.remove('active');
+  document.getElementById('analysis-result').style.display = 'block';
+
+  document.getElementById('doc-type-tag').textContent = `📋 ${data.document_type}`;
+  document.getElementById('text-preview').textContent = data.text_preview || '';
+
+  // Group variables by category
+  const groups = {};
+  const catLabels = {
+    cliente: '👤 Dados do Cliente',
+    fornecedor: '🏢 Dados do Fornecedor / Prestador',
+    financeiro: '💰 Valores Financeiros',
+    servico: '⚙️ Serviço / Escopo',
+    prazo: '📅 Prazos',
+    contato: '📧 Contato',
+    outro: '📌 Outros'
+  };
+
+  state.variables.forEach(v => {
+    const cat = v.category || 'outro';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(v);
+  });
+
+  let html = '<div class="var-sections">';
+  for (const [cat, vars] of Object.entries(groups)) {
+    if (!vars.length) continue;
+    html += `<div>
+      <div class="var-section-title">${catLabels[cat] || cat} <span class="count">${vars.length}</span></div>
+      <div class="var-grid">`;
+    vars.forEach(v => {
+      const badges = [];
+      if (v.locked) badges.push(`<span class="var-badge badge-locked">🔒 Bloqueado</span>`);
+      if (v.is_calculated) badges.push(`<span class="var-badge badge-calc">🧮 Calculado</span>`);
+      if (v.market_reference) badges.push(`<span class="var-badge badge-ref">📊 Mercado</span>`);
+      html += `
+        <div class="var-card ${v.locked?'locked-card':''} ${v.is_calculated?'calc-card':''}">
+          <div class="var-card-header">
+            <div class="var-label">${v.label}</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">${badges.join('')}</div>
+          </div>
+          <div class="mono" style="color:var(--text2);">${v.current_value || '<em style="color:var(--text3)">vazio</em>'}</div>
+          <div class="var-hint">${v.description}</div>
+        </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  if (data.calculations && data.calculations.length) {
+    html += `<div>
+      <div class="var-section-title">🧮 Cálculos Automáticos <span class="count">${data.calculations.length}</span></div>
+      <div class="var-grid">`;
+    data.calculations.forEach(c => {
+      html += `
+        <div class="var-card calc-card">
+          <div class="var-card-header">
+            <div class="var-label">${c.label}</div>
+            <span class="var-badge badge-calc">🧮 Auto</span>
+          </div>
+          <div class="mono" style="color:var(--green); font-size:11px;">${c.formula}</div>
+          <div class="var-hint">${c.description || ''}</div>
+        </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  document.getElementById('variables-preview').innerHTML = html;
+
+  // Also build the form for step 3
+  buildForm();
+}
+
+// ─── FORM BUILDER ────────────────────────────────────────────────────────────
+function buildForm() {
+  const catLabels = {
+    cliente: '👤 Dados do Cliente',
+    fornecedor: '🏢 Dados do Fornecedor',
+    financeiro: '💰 Valores Financeiros',
+    servico: '⚙️ Serviço / Escopo',
+    prazo: '📅 Prazos',
+    contato: '📧 Contato',
+    outro: '📌 Outros'
+  };
+
+  const groups = {};
+  let hasLocked = false;
+
+  state.variables.forEach(v => {
+    if (v.is_calculated) return; // skip calculated in form
+    const cat = v.category || 'outro';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(v);
+    if (v.locked) hasLocked = true;
+  });
+
+  document.getElementById('locked-notice').style.display = hasLocked ? 'flex' : 'none';
+
+  let html = '<div class="var-sections">';
+  for (const [cat, vars] of Object.entries(groups)) {
+    if (!vars.length) continue;
+    html += `<div>
+      <div class="var-section-title">${catLabels[cat] || cat} <span class="count">${vars.length}</span></div>
+      <div class="var-grid">`;
+    vars.forEach(v => {
+      const isLocked = v.locked;
+      const inputType = getInputType(v.type);
+      const cls = isLocked ? 'locked' : '';
+      const badge = isLocked ? ' 🔒' : (v.market_reference ? ' 📊' : '');
+
+      html += `<div class="var-card ${isLocked ? 'locked-card' : ''} field" style="margin:0;">
+        <div class="var-card-header">
+          <label style="margin:0; font-size:11px;">${v.label}${badge}${v.required ? ' <span class="req">*</span>' : ''}</label>
+        </div>
+        <input
+          type="${inputType}"
+          id="var-${v.id}"
+          data-id="${v.id}"
+          data-type="${v.type}"
+          value="${v.current_value || ''}"
+          ${isLocked ? 'readonly class="locked"' : ''}
+          placeholder="${v.description}"
+          oninput="onVarChange()">
+        ${v.market_reference ? `<div class="var-hint">📊 Ref. mercado: ${v.market_reference.value || 'N/A'}</div>` : ''}
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  // Calculated fields display
+  const calcVars = state.variables.filter(v => v.is_calculated);
+  if (calcVars.length) {
+    html += `<div>
+      <div class="var-section-title">🧮 Campos Calculados <span class="count">${calcVars.length}</span></div>
+      <div class="var-grid">`;
+    calcVars.forEach(v => {
+      html += `<div class="var-card calc-card field" style="margin:0;">
+        <div class="var-card-header">
+          <label style="margin:0; font-size:11px;">${v.label} 🧮</label>
+        </div>
+        <input type="text" id="var-${v.id}" data-id="${v.id}" class="calculated" value="Aguardando valores..." readonly>
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  document.getElementById('form-fields').innerHTML = html;
+
+  // Build calculations display
+  buildCalcSummary();
+  onVarChange(); // trigger initial calc
+}
+
+function getInputType(type) {
+  const map = { number: 'number', currency: 'text', date: 'date', email: 'email', phone: 'tel', percentage: 'number' };
+  return map[type] || 'text';
+}
+
+function getFormValues() {
+  const values = {};
+  state.variables.forEach(v => {
+    const el = document.getElementById(`var-${v.id}`);
+    if (el) values[v.id] = el.value;
+  });
+  return values;
+}
+
+async function onVarChange() {
+  const values = getFormValues();
+  if (!state.calculations.length) return;
+
+  try {
+    const res = await fetch('/api/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ variables: values, calculations: state.calculations })
+    });
+    const data = await res.json();
+    state.calcValues = data.calculations || {};
+    updateCalcDisplay();
+  } catch(e) {}
+}
+
+function buildCalcSummary() {
+  if (!state.calculations.length) return;
+  document.getElementById('calc-summary-block').style.display = 'block';
+  updateCalcDisplay();
+}
+
+function updateCalcDisplay() {
+  let html = '';
+  const calcs = state.calculations;
+  if (!calcs.length) return;
+
+  calcs.forEach((c, i) => {
+    const val = state.calcValues[c.id];
+    const formatted = val ? val.formatted : '...';
+    const isLast = i === calcs.length - 1;
+    html += `<div class="calc-row" ${isLast?'style="font-weight:600;"':''}>
+      <div class="calc-name">${c.label}</div>
+      <div class="calc-value">${formatted}</div>
+    </div>`;
+    // update calculated field input if present
+    const el = document.getElementById(`var-${c.id}`);
+    if (el) el.value = formatted;
+  });
+
+  document.getElementById('calc-rows').innerHTML = html;
+}
+
+// ─── GENERATE ────────────────────────────────────────────────────────────────
+async function generateDocument() {
+  const values = getFormValues();
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: state.sessionId,
+        values,
+        calc_values: state.calcValues,
+        title: 'Proposta de Serviço',
+        api_key: document.getElementById('api-key').value.trim(),
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Erro: ' + (err.error || 'Desconhecido'));
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proposta_${new Date().toISOString().slice(0,10)}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // Clear session from server
+    if (state.sessionId) {
+      fetch('/api/session/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: state.sessionId })
+      });
+    }
+
+    goToStep(4);
+  } catch(e) {
+    alert('Erro ao gerar documento: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📄 Gerar Documento PDF';
+  }
+}
+
+function newDocument() {
+  state.sessionId = null;
+  state.variables = [];
+  state.calculations = [];
+  state.calcValues = {};
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-name').style.display = 'none';
+  uploadZone.classList.remove('has-file');
+  document.getElementById('analysis-result').style.display = 'none';
+  document.getElementById('loading-block').classList.add('active');
+  goToStep(1);
+}
+
+// ─── MARKET REFS ─────────────────────────────────────────────────────────────
+function toggleMarketPanel() {
+  const content = document.getElementById('market-panel-content');
+  const icon = document.getElementById('market-toggle-icon');
+  const isOpen = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : 'block';
+  icon.style.transform = isOpen ? '' : 'rotate(90deg)';
+}
+
+function switchMarketTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[onclick="switchMarketTab('${tab}')"]`).classList.add('active');
+  document.getElementById('market-save-tab').style.display = tab === 'save' ? 'block' : 'none';
+  document.getElementById('market-load-tab').style.display = tab === 'load' ? 'block' : 'none';
+}
+
+async function saveMarketRefs() {
+  const password = document.getElementById('market-ref-password').value.trim();
+  const jsonText = document.getElementById('market-ref-json').value.trim();
+  const msgEl = document.getElementById('market-save-msg');
+
+  if (!password || !jsonText) {
+    showMsg(msgEl, 'error', 'Preencha a senha e os dados de referência.');
+    return;
+  }
+
+  let refs;
+  try { refs = JSON.parse(jsonText); } catch(e) {
+    showMsg(msgEl, 'error', 'JSON inválido. Verifique a formatação.');
+    return;
+  }
+
+  const res = await fetch('/api/market-ref/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password, references: refs })
+  });
+  const data = await res.json();
+  if (res.ok) showMsg(msgEl, 'success', data.message);
+  else showMsg(msgEl, 'error', data.error);
+}
+
+async function loadMarketRefs() {
+  const password = document.getElementById('market-load-password').value.trim();
+  const msgEl = document.getElementById('market-load-msg');
+
+  const res = await fetch('/api/market-ref/load', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    document.getElementById('market-load-result').style.display = 'block';
+    document.getElementById('market-loaded-json').value = JSON.stringify(data.references, null, 2);
+    showMsg(msgEl, 'success', 'Referências carregadas com sucesso!');
+  } else {
+    showMsg(msgEl, 'error', data.error);
+  }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('upload-error');
+  el.innerHTML = `⚠️ <div>${msg}</div>`;
+  el.style.display = 'flex';
+}
+
+function showStepError(msg) {
+  document.getElementById('loading-block').innerHTML = `
+    <div style="text-align:center; padding:20px;">
+      <div style="font-size:40px;margin-bottom:12px;">❌</div>
+      <div style="color:var(--red); font-size:15px; margin-bottom:16px;">${msg}</div>
+      <button class="btn btn-secondary" onclick="goToStep(1)">← Voltar e Corrigir</button>
+    </div>`;
+}
+
+function showMsg(el, type, msg) {
+  el.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+  el.innerHTML = `${type === 'error' ? '❌' : '✅'} <div>${msg}</div>`;
+  el.style.display = 'flex';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+</script>
+</body>
+</html>
