@@ -6,7 +6,7 @@ Todos os dados são processados localmente. Nenhum dado é armazenado em disco.
 from config import APP_PORT
 from flask import Flask, request, jsonify, send_file, render_template
 import pdfplumber
-import anthropic
+from openai import OpenAI
 import json
 import os
 import io
@@ -175,7 +175,7 @@ def analyze_pdf():
         if not text_content.strip():
             return jsonify({'error': 'Não foi possível extrair texto do PDF. O arquivo pode ser uma imagem escaneada.'}), 400
 
-        client = anthropic.Anthropic(api_key=api_key)
+        client = OpenAI(api_key=api_key)
 
         prompt = f"""Você é um especialista em análise de documentos empresariais brasileiros.
 
@@ -222,13 +222,12 @@ Diretrizes:
 Documento a analisar:
 {text_content[:5000]}"""
 
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
         )
-
-        result_text = response.content[0].text.strip()
+        result_text = response.choices[0].message.content.strip()
 
         # Limpar markdown se presente
         if '```json' in result_text:
@@ -272,8 +271,9 @@ Documento a analisar:
             'text_preview': text_content[:500] + '...' if len(text_content) > 500 else text_content,
         })
 
-    except anthropic.AuthenticationError:
-        return jsonify({'error': 'Chave de API inválida. Verifique sua chave Anthropic.'}), 401
+    except Exception as e:
+        if '401' in str(e):
+            return jsonify({'error': 'Chave de API inválida. Verifique sua chave Anthropic.'}), 401
     except json.JSONDecodeError as e:
         return jsonify({'error': f'Erro ao processar resposta da IA. Tente novamente.'}), 500
     except Exception as e:
@@ -327,7 +327,7 @@ def generate_document():
     api_key = session['api_key']
 
     try:
-        client = anthropic.Anthropic(api_key=api_key)
+        client = OpenAI(api_key=api_key)
 
         # Combinar variáveis e cálculos
         all_values = {**values}
@@ -364,13 +364,12 @@ Regras:
 
 Retorne APENAS o documento formatado, sem comentários."""
 
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
         )
-
-        filled_content = response.content[0].text.strip()
+        filled_content = response.choices[0].message.content.strip()
 
         # Gerar PDF
         pdf_bytes = generate_pdf_output(filled_content, title)
