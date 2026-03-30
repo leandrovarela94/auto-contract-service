@@ -592,10 +592,10 @@
   <!-- PANEL 1: UPLOAD -->
   <div class="panel active" id="panel-1">
     <div class="panel-title">Configuração Inicial</div>
-    <div class="panel-subtitle">Insira sua chave de API e faça upload do template PDF. Nenhum dado será transmitido além da chamada à API Anthropic com a chave informada.</div>
+    <div class="panel-subtitle">Insira sua chave de API e faça upload do template PDF. Nenhum dado será transmitido além da chamada à API OpenAI com a chave informada.</div>
 
     <div class="alert alert-info">
-      ℹ️ <div>Sua chave de API fica <strong>apenas na memória RAM</strong> desta sessão e nunca é salva em disco. A conexão com a Anthropic usa HTTPS criptografado.</div>
+      ℹ️ <div>Sua chave de API fica <strong>apenas na memória RAM</strong> desta sessão e nunca é salva em disco. A conexão com a IA usa HTTPS criptografado.</div>
     </div>
 
     <div class="field">
@@ -817,7 +817,7 @@ async function startAnalysis() {
 
   errEl.style.display = 'none';
 
-  if (!apiKey) { showError('Insira sua chave de API Anthropic.'); return; }
+  if (!apiKey) { showError('Insira sua chave de API OpenAI.'); return; }
   if (!apiKey.startsWith('sk-ant-')) { showError('Chave de API inválida. Deve começar com "sk-ant-".'); return; }
   if (!file) { showError('Selecione um arquivo PDF.'); return; }
 

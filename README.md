@@ -96,7 +96,7 @@ proposta-app/
 → O PDF pode ser escaneado (imagem). Use um PDF com texto selecionável.
 
 **Erro: "Chave de API inválida"**
-→ Verifique se a chave começa com `sk-ant-` e está correta em console.anthropic.com
+→ Verifique se a chave stá correta
 
 **Erro de porta em uso**
 → Mude a porta no final de `app.py`:
