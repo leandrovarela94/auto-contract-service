@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropostaAI — Gerador de Contratos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b14;
+    --bg2: #0d1220;
+    --surface: #111827;
+    --surface2: #1a2332;
+    --border: #1e2d42;
+    --border2: #263548;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --accent-glow: rgba(59,130,246,0.15);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.12);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #4b6380;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+    --r: 10px;
+    --r2: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(59,130,246,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  header {
+    padding: 24px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 20px rgba(59,130,246,0.3);
+  }
+  .logo-text {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--accent2); }
+
+  .tabs-main {
+    display: flex;
+    gap: 4px;
+    background: var(--bg2);
+    padding: 4px;
+    border-radius: var(--r2);
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+  }
+  .tab-main {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    color: var(--text3);
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .tab-main.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .tab-main:hover:not(.active) {
+    color: var(--text2);
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 28px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .panel.active { display: block; animation: fadeUp 0.3s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-title {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+  .panel-subtitle {
+    color: var(--text2);
+    font-size: 13px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .field { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 7px;
+  }
+  label .req { color: var(--accent); }
+  input[type="text"], input[type="password"], input[type="number"],
+  input[type="email"], input[type="date"], select, textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1.5px solid var(--border2);
+    border-radius: var(--r2);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 10px 13px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  input.locked {
+    background: rgba(245,158,11,0.06);
+    border-color: rgba(245,158,11,0.3);
+    color: var(--amber);
+    cursor: not-allowed;
+  }
+  input.calculated {
+    background: rgba(16,185,129,0.06);
+    border-color: rgba(16,185,129,0.3);
+    color: var(--green);
+    cursor: default;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .field-hint {
+    font-size: 11.5px;
+    color: var(--text3);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  .upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--r);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .upload-zone.has-file {
+    border-color: var(--green);
+    background: var(--green-glow);
+    border-style: solid;
+  }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-title { font-family: var(--display); font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .upload-sub { color: var(--text2); font-size: 13px; }
+  .upload-file-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    margin-top: 10px;
+    font-weight: 500;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: var(--r2);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 20px rgba(59,130,246,0.25);
+  }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 24px rgba(59,130,246,0.35); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .btn-secondary:hover { background: var(--border); color: var(--text); }
+  .btn-green {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 0 20px rgba(16,185,129,0.2);
+  }
+  .btn-green:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-purple {
+    background: var(--purple);
+    color: white;
+    box-shadow: 0 0 20px rgba(139,92,246,0.2);
+  }
+  .btn-purple:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.1); }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    align-items: center;
+  }
+  .btn-row-right {
+    justify-content: flex-end;
+  }
+
+  .template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .template-card {
+    background: var(--bg2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    transition: all 0.2s;
+  }
+  .template-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .template-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .template-card-title {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .template-card-type {
+    font-size: 11px;
+    padding: 3px 8px;
+    background: rgba(59,130,246,0.1);
+    color: var(--accent2);
+    border-radius: 100px;
+    border: 1px solid rgba(59,130,246,0.2);
+  }
+  .template-card-desc {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .template-card-meta {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 16px;
+    font-family: var(--mono);
+  }
+  .template-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .template-card-actions .btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 12px;
+    justify-content: center;
+  }
+
+  .var-sections { display: flex; flex-direction: column; gap: 24px; }
+  .var-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .var-section-title .count {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 1px 7px;
+    border-radius: 100px;
+    font-size: 10px;
+    color: var(--text2);
+  }
+
+  .var-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .var-card {
+    background: var(--bg2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r2);
+    padding: 14px;
+    transition: border-color 0.2s;
+  }
+  .var-card:hover { border-color: var(--border2); }
+  .var-card.locked-card { border-color: rgba(245,158,11,0.25); }
+  .var-card.calc-card { border-color: rgba(16,185,129,0.2); }
+  .var-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .var-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.3px;
+  }
+  .var-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 100px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge-locked { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-calc { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .badge-ref { background: rgba(59,130,246,0.1); color: var(--accent2); border: 1px solid rgba(59,130,246,0.2); }
+  .var-hint { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  .calc-summary {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    margin-top: 24px;
+  }
+  .calc-summary-title {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .calc-row:last-child { border-bottom: none; font-weight: 600; }
+  .calc-row:last-child .calc-value { color: var(--green); font-size: 16px; }
+  .calc-name { color: var(--text2); font-size: 13px; }
+  .calc-value { font-family: var(--mono); font-size: 14px; color: var(--text); }
+
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--r2);
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.5;
+  }
+  .alert-info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
+  .alert-success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); color: #6ee7b7; }
+  .alert-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: #fcd34d; }
+  .alert-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; }
+
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .loading.active { display: block; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text2); font-size: 14px; }
+  .loading-sub { color: var(--text3); font-size: 12px; margin-top: 4px; font-family: var(--mono); }
+
+  .doc-type-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.25);
+    color: #a5b4fc;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 20px;
+  }
+
+  .text-preview {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r2);
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text2);
+    line-height: 1.7;
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    margin-bottom: 20px;
+  }
+
+  .section-notice {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: var(--r2);
+    padding: 12px 16px;
+    font-size: 12.5px;
+    color: #fcd34d;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .export-options {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .export-option {
+    flex: 1;
+    min-width: 150px;
+    background: var(--bg2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .export-option:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .export-option-icon { font-size: 28px; margin-bottom: 8px; }
+  .export-option-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .export-option-desc { font-size: 11px; color: var(--text3); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text3);
+  }
+  .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-state-title { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+  .empty-state-desc { font-size: 13px; max-width: 300px; margin: 0 auto; }
+
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    padding: 28px;
+    width: 500px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: fadeUp 0.25s ease;
+  }
+  .modal-title { font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { color: var(--text2); font-size: 13px; margin-bottom: 20px; }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  .full-width { grid-column: 1 / -1; }
+
+  @media (max-width: 640px) {
+    .var-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .field-row-3 { grid-template-columns: 1fr; }
+    .template-grid { grid-template-columns: 1fr; }
+    .export-options { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">📄</div>
+        <div class="logo-text">Proposta<span>AI</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs-main">
+    <button class="tab-main active" onclick="switchMainTab('upload')">
+      📤 Upload PDF
+    </button>
+    <button class="tab-main" onclick="switchMainTab('templates')">
+      📁 Meus Templates
+    </button>
+  </div>
+
+  <div id="panel-upload" class="panel active">
+    <div class="panel-title">Upload do Template</div>
+    <div class="panel-subtitle">Faça upload de um PDF para analisar e criar um template reutilizável.</div>
+
+    <div class="field">
+      <label>Documento PDF <span class="req">*</span></label>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".pdf">
+        <div class="upload-icon">📋</div>
+        <div class="upload-title">Arraste o PDF aqui ou clique para selecionar</div>
+        <div class="upload-sub">Contrato, proposta, orçamento ou qualquer documento</div>
+        <div class="upload-file-name" id="file-name" style="display:none"></div>
+      </div>
+    </div>
+
+    <div id="upload-error" class="alert alert-error" style="display:none;margin-top:12px;"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="startAnalysis()" id="btn-analyze">
+        🔍 Analisar Documento
+      </button>
+    </div>
+  </div>
+
+  <div id="panel-templates" class="panel">
+    <div class="panel-title">Meus Templates</div>
+    <div class="panel-subtitle">Gerencie seus templates salvos. Use-os para gerar novos contratos rapidamente.</div>
+
+    <div id="templates-list"></div>
+
+    <div class="btn-row" style="margin-top: 20px;">
+      <button class="btn btn-secondary" onclick="loadTemplates()">🔄 Atualizar Lista</button>
+    </div>
+  </div>
+
+  <div id="panel-analysis" class="panel">
+    <div class="loading active" id="loading-block">
+      <div class="spinner"></div>
+      <div class="loading-text">Analisando documento com IA...</div>
+      <div class="loading-sub" id="loading-sub">Extraindo texto e identificando variáveis</div>
+    </div>
+
+    <div id="analysis-result" style="display:none;">
+      <div id="doc-type-tag" class="doc-type-tag"></div>
+      <div class="panel-title">Variáveis Detectadas</div>
+      <div class="panel-subtitle">A IA identificou os seguintes campos no documento.</div>
+
+      <div class="text-preview" id="text-preview"></div>
+
+      <div id="variables-preview"></div>
+
+      <div class="alert alert-info">
+        💾 <div>Salve este template para reutilizá-lo posteriormente sem precisar enviar o PDF novamente.</div>
+      </div>
+
+      <div class="field">
+        <label>Nome do Template <span class="req">*</span></label>
+        <input type="text" id="template-name" placeholder="Ex: Contrato de Prestação de Serviços">
+      </div>
+      <div class="field">
+        <label>Descrição (opcional)</label>
+        <input type="text" id="template-desc" placeholder="Breve descrição do template">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="showPanel('upload')">← Voltar</button>
+        <button class="btn btn-primary" onclick="saveAsTemplate()">💾 Salvar Template</button>
+        <button class="btn btn-green" onclick="showPanel('fill')">Preencher Campos →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-fill" class="panel">
+    <div class="panel-title">Preencher Documento</div>
+    <div class="panel-subtitle">Complete os campos abaixo. Use a barra de export para baixar em diferentes formatos.</div>
+
+    <div id="locked-notice" class="section-notice" style="display:none;">
+      🔒 <div>Alguns campos estão protegidos com referências de mercado.</div>
+    </div>
+
+    <div id="form-fields"></div>
+
+    <div id="calc-summary-block" class="calc-summary" style="display:none;">
+      <div class="calc-summary-title">🧮 Resumo Financeiro</div>
+      <div id="calc-rows"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="showPanel('upload')">← Upload Novo</button>
+      <button class="btn btn-green" onclick="generateDocument('pdf')" id="btn-generate">
+        📄 Gerar PDF
+      </button>
+    </div>
+
+    <div class="export-options">
+      <div class="export-option" onclick="generateDocument('pdf')">
+        <div class="export-option-icon">📄</div>
+        <div class="export-option-title">PDF</div>
+        <div class="export-option-desc">Documento para impressão</div>
+      </div>
+      <div class="export-option" onclick="generateDocument('docx')">
+        <div class="export-option-icon">📝</div>
+        <div class="export-option-title">Word (DOCX)</div>
+        <div class="export-option-desc">Documento editável</div>
+      </div>
+      <div class="export-option" onclick="generateDocument('markdown')">
+        <div class="export-option-icon">📋</div>
+        <div class="export-option-title">Markdown</div>
+        <div class="export-option-desc">Texto formatado</div>
+      </div>
+      <div class="export-option" onclick="exportTemplateZip()">
+        <div class="export-option-icon">📦</div>
+        <div class="export-option-title">Exportar</div>
+        <div class="export-option-desc">Template completo (ZIP)</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-done" class="panel">
+    <div style="text-align:center; padding: 20px 0;">
+      <div style="font-size:56px; margin-bottom:16px;">✅</div>
+      <div class="panel-title" style="font-size:24px;">Documento Gerado!</div>
+      <div class="panel-subtitle" style="font-size:15px; max-width:400px; margin:0 auto 28px;">
+        O documento foi gerado e baixado automaticamente.
+      </div>
+
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn btn-secondary" onclick="showPanel('fill')">← Editar e Regerar</button>
+        <button class="btn btn-primary" onclick="showPanel('upload')">➕ Novo Documento</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="modal-delete" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">Excluir Template</div>
+    <div class="modal-sub">Tem certeza que deseja excluir este template? Esta ação não pode ser desfeita.</div>
+    <div id="modal-delete-name" style="font-weight:600; margin-bottom:20px;"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmDeleteTemplate()">🗑️ Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  sessionId: null,
+  templateId: null,
+  variables: [],
+  calculations: [],
+  calcValues: {},
+  currentStep: 'upload',
+  deleteTemplateId: null,
+};
+
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  state.currentStep = name;
+
+  if (name === 'templates') loadTemplates();
+}
+
+function switchMainTab(name) {
+  document.querySelectorAll('.tab-main').forEach(t => t.classList.remove('active'));
+  event.target.closest('.tab-main').classList.add('active');
+  showPanel(name);
+}
+
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) showFile(file);
+});
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') {
+    fileInput.files = e.dataTransfer.files;
+    showFile(file);
+  }
+});
+
+function showFile(file) {
+  uploadZone.classList.add('has-file');
+  const fn = document.getElementById('file-name');
+  fn.textContent = `📄 ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  fn.style.display = 'block';
+}
+
+async function startAnalysis() {
+  const file = fileInput.files[0];
+  const errEl = document.getElementById('upload-error');
+  errEl.style.display = 'none';
+
+  if (!file) { showError('Selecione um arquivo PDF.'); return; }
+
+  showPanel('analysis');
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const loadingSub = document.getElementById('loading-sub');
+  const msgs = ['Extraindo texto...', 'Identificando variáveis...', 'Analisando cálculos...', 'Finalizando...'];
+  let msgIdx = 0;
+  const msgInterval = setInterval(() => {
+    loadingSub.textContent = msgs[Math.min(msgIdx++, msgs.length-1)];
+  }, 2000);
+
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+    clearInterval(msgInterval);
+    const data = await res.json();
+
+    if (!res.ok) { showStepError(data.detail); return; }
+
+    state.sessionId = data.session_id;
+    state.variables = data.variables || [];
+    state.calculations = data.calculations || [];
+
+    renderAnalysisResult(data);
+  } catch (e) {
+    clearInterval(msgInterval);
+    showStepError('Erro de conexão. Verifique se o servidor está rodando.');
+  }
+}
+
+function renderAnalysisResult(data) {
+  document.getElementById('loading-block').classList.remove('active');
+  document.getElementById('analysis-result').style.display = 'block';
+
+  document.getElementById('doc-type-tag').textContent = `📋 ${data.document_type}`;
+  document.getElementById('text-preview').textContent = data.text_preview || '';
+
+  const groups = {};
+  const catLabels = {
+    cliente: '👤 Dados do Cliente',
+    fornecedor: '🏢 Dados do Fornecedor',
+    financeiro: '💰 Valores Financeiros',
+    servico: '⚙️ Serviço / Escopo',
+    prazo: '📅 Prazos',
+    contato: '📧 Contato',
+    outro: '📌 Outros'
+  };
+
+  state.variables.forEach(v => {
+    const cat = v.category || 'outro';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(v);
+  });
+
+  let html = '<div class="var-sections">';
+  for (const [cat, vars] of Object.entries(groups)) {
+    if (!vars.length) continue;
+    html += `<div>
+      <div class="var-section-title">${catLabels[cat] || cat} <span class="count">${vars.length}</span></div>
+      <div class="var-grid">`;
+    vars.forEach(v => {
+      const badges = [];
+      if (v.locked) badges.push(`<span class="var-badge badge-locked">🔒</span>`);
+      if (v.is_calculated) badges.push(`<span class="var-badge badge-calc">🧮</span>`);
+      html += `
+        <div class="var-card ${v.locked?'locked-card':''} ${v.is_calculated?'calc-card':''}">
+          <div class="var-card-header">
+            <div class="var-label">${v.label}</div>
+            <div style="display:flex;gap:4px;">${badges.join('')}</div>
+          </div>
+          <div class="mono" style="color:var(--text2);">${v.current_value || '<em style="color:var(--text3)">vazio</em>'}</div>
+          <div class="var-hint">${v.description || ''}</div>
+        </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  if (data.calculations && data.calculations.length) {
+    html += `<div>
+      <div class="var-section-title">🧮 Cálculos <span class="count">${data.calculations.length}</span></div>
+      <div class="var-grid">`;
+    data.calculations.forEach(c => {
+      html += `
+        <div class="var-card calc-card">
+          <div class="var-card-header">
+            <div class="var-label">${c.label}</div>
+          </div>
+          <div class="mono" style="color:var(--green); font-size:11px;">${c.formula}</div>
+        </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  document.getElementById('variables-preview').innerHTML = html;
+  buildForm();
+}
+
+async function saveAsTemplate() {
+  const name = document.getElementById('template-name').value.trim();
+  const desc = document.getElementById('template-desc').value.trim();
+
+  if (!name) {
+    alert('Informe o nome do template.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name,
+        description: desc,
+        document_type: state.variables[0]?.document_type || 'Documento',
+        sections: [],
+        variables: state.variables,
+        calculations: state.calculations,
+        original_text: ''
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      state.templateId = data.template_id;
+      showAlert('success', 'Template salvo com sucesso!');
+      showPanel('fill');
+    } else {
+      showAlert('error', 'Erro ao salvar template.');
+    }
+  } catch (e) {
+    showAlert('error', 'Erro de conexão.');
+  }
+}
+
+function buildForm() {
+  const catLabels = {
+    cliente: '👤 Dados do Cliente',
+    fornecedor: '🏢 Dados do Fornecedor',
+    financeiro: '💰 Valores Financeiros',
+    servico: '⚙️ Serviço / Escopo',
+    prazo: '📅 Prazos',
+    contato: '📧 Contato',
+    outro: '📌 Outros'
+  };
+
+  const groups = {};
+  let hasLocked = false;
+
+  state.variables.forEach(v => {
+    if (v.is_calculated) return;
+    const cat = v.category || 'outro';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(v);
+    if (v.locked) hasLocked = true;
+  });
+
+  document.getElementById('locked-notice').style.display = hasLocked ? 'flex' : 'none';
+
+  let html = '<div class="var-sections">';
+  for (const [cat, vars] of Object.entries(groups)) {
+    if (!vars.length) continue;
+    html += `<div>
+      <div class="var-section-title">${catLabels[cat] || cat} <span class="count">${vars.length}</span></div>
+      <div class="var-grid">`;
+    vars.forEach(v => {
+      const isLocked = v.locked;
+      const inputType = getInputType(v.type);
+      const cls = isLocked ? 'locked' : '';
+
+      html += `<div class="var-card ${isLocked ? 'locked-card' : ''} field" style="margin:0;">
+        <div class="var-card-header">
+          <label style="margin:0; font-size:11px;">${v.label}${isLocked ? ' 🔒' : ''}${v.required ? ' <span class="req">*</span>' : ''}</label>
+        </div>
+        <input
+          type="${inputType}"
+          id="var-${v.id}"
+          data-id="${v.id}"
+          data-type="${v.type}"
+          value="${v.current_value || ''}"
+          ${isLocked ? 'readonly class="locked"' : ''}
+          placeholder="${v.placeholder || v.description}"
+          oninput="onVarChange()">
+        ${v.market_reference ? `<div class="var-hint">📊 Ref: ${v.market_reference.value || 'N/A'}</div>` : ''}
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  const calcVars = state.variables.filter(v => v.is_calculated);
+  if (calcVars.length) {
+    html += `<div>
+      <div class="var-section-title">🧮 Campos Calculados <span class="count">${calcVars.length}</span></div>
+      <div class="var-grid">`;
+    calcVars.forEach(v => {
+      html += `<div class="var-card calc-card field" style="margin:0;">
+        <div class="var-card-header">
+          <label style="margin:0; font-size:11px;">${v.label} 🧮</label>
+        </div>
+        <input type="text" id="var-${v.id}" data-id="${v.id}" class="calculated" value="Aguardando..." readonly>
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  document.getElementById('form-fields').innerHTML = html;
+
+  buildCalcSummary();
+  onVarChange();
+}
+
+function getInputType(type) {
+  const map = { number: 'number', currency: 'text', date: 'date', email: 'email', phone: 'tel', percentage: 'number', cnpj: 'text', cpf: 'text', address: 'text' };
+  return map[type] || 'text';
+}
+
+function getFormValues() {
+  const values = {};
+  state.variables.forEach(v => {
+    const el = document.getElementById(`var-${v.id}`);
+    if (el) values[v.id] = el.value;
+  });
+  return values;
+}
+
+async function onVarChange() {
+  const values = getFormValues();
+  if (!state.calculations.length) return;
+
+  try {
+    const res = await fetch('/api/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ variables: values, calculations: state.calculations })
+    });
+    const data = await res.json();
+    state.calcValues = data.calculations || {};
+    updateCalcDisplay();
+  } catch(e) {}
+}
+
+function buildCalcSummary() {
+  if (!state.calculations.length) return;
+  document.getElementById('calc-summary-block').style.display = 'block';
+  updateCalcDisplay();
+}
+
+function updateCalcDisplay() {
+  let html = '';
+  const calcs = state.calculations;
+  if (!calcs.length) return;
+
+  calcs.forEach((c, i) => {
+    const val = state.calcValues[c.id];
+    const formatted = val ? val.formatted : '...';
+    const isLast = i === calcs.length - 1;
+    html += `<div class="calc-row" ${isLast?'style="font-weight:600;"':''}>
+      <div class="calc-name">${c.label}</div>
+      <div class="calc-value">${formatted}</div>
+    </div>`;
+    const el = document.getElementById(`var-${c.id}`);
+    if (el) el.value = formatted;
+  });
+
+  document.getElementById('calc-rows').innerHTML = html;
+}
+
+async function generateDocument(format) {
+  const values = getFormValues();
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+
+  try {
+    const endpoint = format === 'docx' ? '/api/generate/docx' : format === 'markdown' ? '/api/generate/markdown' : '/api/generate';
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: state.sessionId,
+        values,
+        calc_values: state.calcValues,
+        title: 'Proposta de Serviço',
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Erro: ' + (err.detail || 'Desconhecido'));
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ext = format === 'docx' ? '.docx' : format === 'markdown' ? '.md' : '.pdf';
+    const mimeType = format === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : format === 'markdown' ? 'text/markdown' : 'application/pdf';
+    a.download = `proposta_${new Date().toISOString().slice(0,10)}${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    showPanel('done');
+  } catch(e) {
+    alert('Erro ao gerar documento: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📄 Gerar PDF';
+  }
+}
+
+async function exportTemplateZip() {
+  const values = getFormValues();
+
+  try {
+    const res = await fetch('/api/export/template', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: state.sessionId,
+        values,
+        calc_values: state.calcValues,
+        title: 'Proposta de Serviço',
+      })
+    });
+
+    if (!res.ok) {
+      alert('Erro ao exportar template.');
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `template_export_${new Date().toISOString().slice(0,10)}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    alert('Erro ao exportar: ' + e.message);
+  }
+}
+
+async function loadTemplates() {
+  try {
+    const res = await fetch('/api/templates');
+    const data = await res.json();
+    renderTemplates(data.templates || []);
+  } catch (e) {
+    renderTemplates([]);
+  }
+}
+
+function renderTemplates(templates) {
+  const container = document.getElementById('templates-list');
+
+  if (!templates.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📂</div>
+        <div class="empty-state-title">Nenhum template salvo</div>
+        <div class="empty-state-desc">Faça upload de um PDF e salve como template para reutilizá-lo.</div>
+      </div>`;
+    return;
+  }
+
+  let html = '<div class="template-grid">';
+  templates.forEach(t => {
+    const date = new Date(t.updated_at).toLocaleDateString('pt-BR');
+    html += `
+      <div class="template-card">
+        <div class="template-card-header">
+          <div class="template-card-title">${t.name}</div>
+          <div class="template-card-type">${t.document_type}</div>
+        </div>
+        <div class="template-card-desc">${t.description || 'Sem descrição'}</div>
+        <div class="template-card-meta">${t.variable_count} variáveis • Atualizado: ${date}</div>
+        <div class="template-card-actions">
+          <button class="btn btn-primary" onclick="useTemplate('${t.id}')">📝 Usar</button>
+          <button class="btn btn-secondary" onclick="downloadTemplate('${t.id}')">⬇️</button>
+          <button class="btn btn-danger" onclick="deleteTemplate('${t.id}', '${t.name}')">🗑️</button>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function useTemplate(templateId) {
+  try {
+    const res = await fetch(`/api/templates/${templateId}/use`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert('Erro ao carregar template.');
+      return;
+    }
+
+    state.sessionId = data.session_id;
+    state.templateId = templateId;
+    state.variables = data.variables || [];
+    state.calculations = data.calculations || [];
+
+    buildForm();
+    showPanel('fill');
+  } catch (e) {
+    alert('Erro de conexão.');
+  }
+}
+
+async function downloadTemplate(templateId) {
+  try {
+    const res = await fetch(`/api/templates/${templateId}/export`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `template_${templateId}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Erro ao baixar template.');
+  }
+}
+
+function deleteTemplate(id, name) {
+  state.deleteTemplateId = id;
+  document.getElementById('modal-delete-name').textContent = name;
+  document.getElementById('modal-delete').classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+async function confirmDeleteTemplate() {
+  try {
+    const res = await fetch(`/api/templates/${state.deleteTemplateId}`, { method: 'DELETE' });
+    if (res.ok) {
+      showAlert('success', 'Template excluído!');
+      loadTemplates();
+    } else {
+      showAlert('error', 'Erro ao excluir.');
+    }
+  } catch (e) {
+    showAlert('error', 'Erro de conexão.');
+  }
+  closeModal('modal-delete');
+}
+
+function showAlert(type, message) {
+  const div = document.createElement('div');
+  div.className = `alert alert-${type === 'success' ? 'success' : 'error'}`;
+  div.style.cssText = 'position:fixed;top:20px;right:20px;z-index:200;animation:fadeUp 0.3s ease;';
+  div.innerHTML = `${type === 'success' ? '✅' : '❌'} <div>${message}</div>`;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+function showError(msg) {
+  const el = document.getElementById('upload-error');
+  el.innerHTML = `⚠️ <div>${msg}</div>`;
+  el.style.display = 'flex';
+}
+
+function showStepError(msg) {
+  document.getElementById('loading-block').innerHTML = `
+    <div style="text-align:center; padding:20px;">
+      <div style="font-size:40px;margin-bottom:12px;">❌</div>
+      <div style="color:var(--red); font-size:15px; margin-bottom:16px;">${msg}</div>
+      <button class="btn btn-secondary" onclick="showPanel('upload')">← Voltar</button>
+    </div>`;
+}
+</script>
+</body>
+</html>
