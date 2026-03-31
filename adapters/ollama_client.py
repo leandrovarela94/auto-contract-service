@@ -17,7 +17,7 @@ class OllamaClient:
         self,
         api_key: str | None = None,
         base_url: str = "https://ollama.com",
-        model: str = "gpt-oss:120b-cloud",
+        model: str = "llama3.2",
     ):
         self.api_key = api_key or os.getenv("OLLAMA_API_KEY", "")
         self.base_url = base_url
