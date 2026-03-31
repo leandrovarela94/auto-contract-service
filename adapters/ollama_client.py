@@ -16,7 +16,7 @@ class OllamaClient:
     def __init__(
         self,
         api_key: str | None = None,
-        base_url: str = "https://ollama.com",
+        base_url: str = "https://ollama.com/v1",
         model: str = "llama3.2:latest",
     ):
         self.api_key = api_key or os.getenv("OLLAMA_API_KEY", "")
