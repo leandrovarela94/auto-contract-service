@@ -18,15 +18,8 @@ class GenerateRequest(BaseModel):
 
 
 class MarketRefSaveRequest(BaseModel):
-    password: str
+    password: str = Field(..., min_length=4)
     references: dict[str, str]
-
-    @Field(min_length=4)
-    @classmethod
-    def password_min_length(cls, v: str) -> str:
-        if len(v.strip()) < 4:
-            raise ValueError("Senha deve ter no mínimo 4 caracteres")
-        return v.strip()
 
 
 class MarketRefLoadRequest(BaseModel):
