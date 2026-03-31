@@ -1,9 +1,10 @@
 """
-Ollama Client — Conexão com Ollama Cloud via API REST.
+Ollama Client — Conexão com Ollama rodando localmente via API REST.
 """
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Any
 
@@ -11,23 +12,15 @@ import httpx
 
 
 class OllamaClient:
-    """Client para Ollama Cloud usando API REST direta."""
+    """Client para Ollama rodando localmente."""
 
     def __init__(
         self,
-        api_key: str | None = None,
-        base_url: str = "https://ollama.com/v1",
-        model: str = "llama3.2:latest",
+        base_url: str = "http://localhost:11434",
+        model: str = "llama3.3",
     ):
-        self.api_key = api_key or os.getenv("OLLAMA_API_KEY", "")
         self.base_url = base_url
         self.model = model
-
-    def _headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
 
     def generate(
         self,
@@ -36,10 +29,7 @@ class OllamaClient:
         temperature: float = 0.0,
         max_tokens: int = 4000,
     ) -> str:
-        """Gera texto usando Ollama Cloud."""
-        if not self.api_key:
-            raise ValueError("OLLAMA_API_KEY não configurada")
-
+        """Gera texto usando Ollama local."""
         payload = {
             "model": self.model,
             "messages": [
@@ -47,23 +37,28 @@ class OllamaClient:
                 {"role": "user", "content": user_prompt},
             ],
             "stream": False,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
         }
 
-        with httpx.Client(timeout=120.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=300.0) as client:
             response = client.post(
-                f"{self.base_url}/chat/completions",
-                headers=self._headers(),
+                f"{self.base_url}/api/chat",
                 json=payload,
             )
 
-            if response.status_code == 401:
-                raise Exception("API Key inválida ou expirada")
             if response.status_code == 404:
-                raise Exception(f"Modelo '{self.model}' não encontrado")
+                raise Exception(
+                    f"Modelo '{self.model}' não encontrado. Execute: ollama pull {self.model}"
+                )
 
-            response.raise_for_status()
+            if response.status_code != 200:
+                raise Exception(f"Erro Ollama: {response.status_code}")
+
             data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
+            return data["message"]["content"].strip()
 
     def generate_json(
         self,
@@ -72,8 +67,6 @@ class OllamaClient:
         temperature: float = 0.0,
     ) -> dict[str, Any]:
         """Gera e parseia JSON."""
-        import json
-
         text = self.generate(
             system_instruction=system_instruction,
             user_prompt=user_prompt,
