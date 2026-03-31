@@ -15,7 +15,7 @@ import pdfplumber
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fpdf import FPDF
 
-from adapters.ollama_adapter import ollama_adapter
+from adapters.ollama_client import ollama_client
 from models.schemas import GenerateRequest
 
 router = APIRouter(prefix="/api", tags=["analyze"])
@@ -198,7 +198,7 @@ async def analyze_pdf(
         raise HTTPException(status_code=400, detail="Não foi possível extrair texto.")
 
     try:
-        raw_response = ollama_adapter.generate(
+        raw_response = ollama_client.generate(
             system_instruction=_SYSTEM_ANALYSIS,
             user_prompt=_ANALYSIS_PROMPT.format(text=text_content[:5000]),
         )
@@ -240,7 +240,7 @@ async def generate_pdf(body: GenerateRequest) -> Any:
     values_str = "\n".join(f"- {k}: {v}" for k, v in all_values.items())
 
     try:
-        filled = ollama_adapter.generate(
+        filled = ollama_client.generate(
             system_instruction=_SYSTEM_FILL,
             user_prompt=_FILL_PROMPT.format(
                 template=session["text_content"][:3000],
