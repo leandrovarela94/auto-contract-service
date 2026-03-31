@@ -1,5 +1,5 @@
 """
-Ollama Client — Conexão com Ollama Cloud via biblioteca Python.
+Ollama Client — Conexão com Ollama Cloud via API REST.
 """
 
 from __future__ import annotations
@@ -7,11 +7,11 @@ from __future__ import annotations
 import os
 from typing import Any
 
-import ollama
+import httpx
 
 
 class OllamaClient:
-    """Client para Ollama Cloud usando a biblioteca oficial."""
+    """Client para Ollama Cloud usando API REST direta."""
 
     def __init__(
         self,
@@ -22,13 +22,12 @@ class OllamaClient:
         self.api_key = api_key or os.getenv("OLLAMA_API_KEY", "")
         self.base_url = base_url
         self.model = model
-        self._client = None
 
-    def _get_client(self):
-        """Lazy initialization do client."""
-        if self._client is None:
-            self._client = ollama.Client(host=self.base_url)
-        return self._client
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
 
     def generate(
         self,
@@ -37,23 +36,34 @@ class OllamaClient:
         temperature: float = 0.0,
         max_tokens: int = 4000,
     ) -> str:
-        """Gera texto usando Ollama."""
-        try:
-            client = self._get_client()
-            response = client.chat(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": user_prompt},
-                ],
-                options={
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
-                },
+        """Gera texto usando Ollama Cloud."""
+        if not self.api_key:
+            raise ValueError("OLLAMA_API_KEY não configurada")
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_prompt},
+            ],
+            "stream": False,
+        }
+
+        with httpx.Client(timeout=120.0) as client:
+            response = client.post(
+                f"{self.base_url}/chat/completions",
+                headers=self._headers(),
+                json=payload,
             )
-            return response["message"]["content"].strip()
-        except Exception as e:
-            raise Exception(f"Erro ao gerar: {str(e)}")
+
+            if response.status_code == 401:
+                raise Exception("API Key inválida ou expirada")
+            if response.status_code == 404:
+                raise Exception(f"Modelo '{self.model}' não encontrado")
+
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"].strip()
 
     def generate_json(
         self,
