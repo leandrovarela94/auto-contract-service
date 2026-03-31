@@ -16,7 +16,7 @@ class OllamaClient:
     def __init__(
         self,
         api_key: str | None = None,
-        base_url: str = "https://api.ollama.com",
+        base_url: str = "https://ollama.com",
         model: str = "gpt-oss:120b-cloud",
     ):
         self.api_key = api_key or os.getenv("OLLAMA_API_KEY", "")
@@ -49,7 +49,7 @@ class OllamaClient:
             "stream": False,
         }
 
-        with httpx.Client(timeout=120.0) as client:
+        with httpx.Client(timeout=120.0, follow_redirects=True) as client:
             response = client.post(
                 f"{self.base_url}/chat/completions",
                 headers=self._headers(),
